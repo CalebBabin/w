@@ -10,8 +10,303 @@
     <meta name="og:image" content="W.png">
     <meta name="twitter:image" content="W.png">
     <meta name="twitter:card" content="summary_large_image">
+
+    <script type="text/javascript" src="three.min.js"></script>
+
+    <style>
+        body, html {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            font-family: 'Times New Roman', Times, serif;
+        }
+        .fallback, canvas {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        .fallback {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            flex-direction: column;
+            vertical-align: middle;
+            font-size: 50vmin;
+            white-space: nowrap;
+        }
+
+        .three .fallback {
+            display: none;
+        }
+
+        .button {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 9999;
+            opacity: 1;
+            transition: opacity 1s ease-in;
+            background: white;
+            text-align: center;
+            justify-content: center;
+            align-items: center;
+        }
+        .three .button {
+            display: flex;
+        }
+        .buttonClicked .button {
+            opacity: 0;
+        }
+
+
+        /*body:before, body:after {
+            content: ' ';
+            display: block;
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            top: 0;
+            left: 0;
+            background: #f00;
+            z-index: 10;
+        }
+        body:before {
+            height: 100%;
+            left: 50%;
+            margin-left: -1;
+        }
+        body:after {
+            width: 100%;
+            top: 50%;
+            margin-top: -1;
+        }*/
+    </style>
 </head>
 <body>
-    
+
+    <div class="fallback">
+        <marquee> W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W </marquee>
+    </div>
+
+    <div class="button">
+        <button>W</button>
+    </div>
+
+    <script>
+
+        const sounds = new Array(29);
+        for (let index = 0; index < sounds.length; index++) {
+            sounds[index] = {
+                clip: new Audio('w/'+index+'.wav'),
+                playing: false,
+            };
+            sounds[index].clip.addEventListener('ended', ()=>{
+                sounds[index].playing = false;
+            });
+            sounds[index].clip.addEventListener('play', ()=>{
+                sounds[index].playing = true;
+            });
+        }
+        const playRandom = () => {
+            let counter = 0;
+            while(true) {
+                const index = Math.floor(Math.random()*sounds.length);
+                if (sounds[index].playing === false) {
+                    sounds[index].clip.play();
+                    break;
+                }
+                counter++;
+                if (counter > 100) break;
+            }
+        }
+
+
+        let hasInit = false;
+        const init3D = () => {
+            if (hasInit) return;
+            hasInit = true;
+
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xffffff);
+
+            const camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 2000 );
+            camera.position.z = 100;
+            scene.add(camera);
+
+            const raycaster = new THREE.Raycaster();
+            let lastIntersection = null;
+            const mouse = new THREE.Vector2();
+
+            window.addEventListener('mousemove', (event)=>{
+                mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+                mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+            })
+
+            window.addEventListener('resize', ()=>{
+                camera.aspect = window.innerWidth/window.innerHeight;
+                camera.updateProjectionMatrix();
+            })
+
+            const ambientLight = new THREE.AmbientLight( 0xcccccc, 0.4 );
+            scene.add( ambientLight );
+            
+            const wTexture = new THREE.TextureLoader().load( 'WWW.png' );
+            const materials = [
+				//new THREE.MeshLambertMaterial( { map: wTexture, transparent: true } ),
+				new THREE.MeshLambertMaterial( { color: 0xdddddd, transparent: true } ),
+				new THREE.MeshPhongMaterial( { color: 0xdddddd, specular: 0x009900, shininess: 30, flatShading: true, transparent: true } ),
+				new THREE.MeshNormalMaterial(),
+				//new THREE.MeshBasicMaterial( { color: 0xffaa00, transparent: true, blending: THREE.AdditiveBlending } ),
+				new THREE.MeshLambertMaterial( { color: 0xdddddd, transparent: true } ),
+				//new THREE.MeshPhongMaterial( { color: 0xdddddd, specular: 0x009900, shininess: 30, map: wTexture, transparent: true } ),
+				new THREE.MeshNormalMaterial( { flatShading: true, transparent: true } ),
+				new THREE.MeshBasicMaterial( { color: 0xffaa00, wireframe: true, transparent: true } ),
+				new THREE.MeshDepthMaterial(),
+				new THREE.MeshLambertMaterial( { color: 0x666666, emissive: 0xff0000, transparent: true } ),
+				new THREE.MeshPhongMaterial( { color: 0x000000, specular: 0x666666, emissive: 0xff0000, shininess: 10, opacity: 0.9, transparent: true } ),
+				new THREE.MeshBasicMaterial( { map: wTexture, transparent: true } ),
+            ]
+
+            const meshes = [];
+
+            const wGeometry = createLetterGeometry('w');
+
+            for (let x = 0; x < 10; x++) {
+                for (let y = 0; y < 10; y++) {
+                    
+                    const wMaterial = new THREE.MeshPhongMaterial({
+                        color: new THREE.Color(0xcccccc),
+                        specular: new THREE.Color(0xffffff*Math.random()),
+                        reflectivity: Math.random(),
+                        shininess: Math.random(),
+                    });
+
+                    const mesh = new THREE.Mesh(wGeometry, materials[Math.floor(Math.random()*materials.length)]);
+
+                    mesh.rotation.y = THREE.Math.degToRad(Math.random()*10-5);
+                    mesh.rotation.x = THREE.Math.degToRad(Math.random()*10-5);
+                    mesh.rotation.z = THREE.Math.degToRad(Math.random()*10-5);
+
+                    mesh.random = new Array(100);
+                    for (let index = 0; index < mesh.random.length; index++) {
+                        mesh.random[index] = Math.random();
+                    }
+                    
+
+                    mesh.position.x -= 10;
+                    mesh.position.y -= 5;
+
+                    mesh.position.x -= (x-4)*20;
+                    mesh.position.y -= (y-4)*20;
+
+                    meshes.push(mesh);
+                    scene.add(mesh);
+                }
+            }
+            
+            
+            renderer = new THREE.WebGLRenderer( { antialias: true } );
+            renderer.setPixelRatio( window.devicePixelRatio );
+            renderer.setSize( window.innerWidth, window.innerHeight );
+            document.body.appendChild( renderer.domElement );
+            window.addEventListener('resize', ()=>{
+                renderer.setSize( window.innerWidth, window.innerHeight );
+            });
+
+            let lastTime = Date.now();
+            const loop = () => {
+                let timescale = Math.min(Math.max(Date.now() - lastTime, 1), 1000);
+
+                const rotationDivisor = 1000;
+
+                for (let index = 0; index < meshes.length; index++) {
+                    const mesh = meshes[index];
+                    mesh.rotation.x += ((mesh.random[0]-0.5)*timescale)/rotationDivisor;
+                    mesh.rotation.y += ((mesh.random[1]-0.5)*timescale)/rotationDivisor;
+                    mesh.rotation.z += ((mesh.random[2]-0.5)*timescale)/rotationDivisor;
+                }
+                
+                raycaster.setFromCamera( mouse, camera );
+                const intersections = raycaster.intersectObjects( meshes );
+                if (intersections.length > 0 && (
+                    lastIntersection === null ||
+                    lastIntersection.object.uuid !== intersections[0].object.uuid
+                )) {
+                    if (lastIntersection) {
+                        lastIntersection.object.material.opacity =0.5;
+                    }
+                    playRandom();
+                    intersections[0].object.material.opacity = .99;
+
+                    lastIntersection = intersections[0];
+                } else if (intersections === null) {
+                    if (lastIntersection) {
+                        lastIntersection.object.material.opacity =0.5;
+                    }
+                    lastIntersection = null;
+                }
+
+                renderer.render( scene, camera );
+
+                window.requestAnimationFrame(loop);
+
+                lastTime = Date.now();
+            }
+
+            window.requestAnimationFrame(loop);
+        }
+
+        const createLetterGeometry = (text, options) => {
+            const appliedOptions = Object.assign({
+                size: 20,
+                height: 1,
+                font: font,
+
+                curveSegments: 4,
+
+                bevelThickness: 2,
+                bevelSize: 1.5,
+                bevelEnabled: false,
+                
+            }, options)
+
+            const tempGeometry = new THREE.TextGeometry( text, appliedOptions );
+
+            tempGeometry.computeBoundingBox();
+            tempGeometry.computeVertexNormals();
+
+            const geometry = new THREE.BufferGeometry().fromGeometry( tempGeometry );
+
+            return geometry;
+        }
+
+        let font = null;
+        let wImage = null;
+        window.addEventListener('load', ()=>{
+            var loader = new THREE.FontLoader();
+            loader.load( 'w_font.json', function ( response ) {
+                font = response;
+                
+                wImage = new Image();
+                wImage.addEventListener('load', ()=>{
+                    document.body.classList.add('three');
+                    window.addEventListener('click', () => {
+                        document.body.classList.add('buttonClicked');
+                        init3D();
+                    }, {once: true})
+                })
+                wImage.src = 'WWW.png';
+            } );
+        })
+    </script>
 </body>
 </html>

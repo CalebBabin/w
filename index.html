@@ -171,6 +171,9 @@
                     if (counter > 100) break;
                 }
             }
+            window.addEventListener("keydown", event => {
+                if (event.keyCode === 87) playRandom();
+            });
 
 
             let hasInit = false;
